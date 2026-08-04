@@ -3,6 +3,7 @@
 > **Instrumentar una vez. Observar todo.**
 
 Bienvenido a la documentación oficial de **AtlasCore Observability**, una plataforma modular de observabilidad basada en **OpenTelemetry** diseñada para proporcionar una visión unificada de aplicaciones, infraestructura, redes y experiencia de usuario.
+Es una plataforma declarativa de capacidades de observabilidad. Cada capacidad se describe mediante manifiestos versionados inspirados en Kubernetes y empaqueta instrumentación, procesamiento, visualización, alertas, documentación y automatización en una unidad reutilizable.
 
 ---
 
