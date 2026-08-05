@@ -17,6 +17,10 @@ theme:
     - search.highlight
     - content.code.copy
 
+extra_javascript:
+  - js/atlascore-web-sdk.umd.js
+  - js/init-atlascore.js
+
 nav:
 
   - Inicio:
