@@ -213,14 +213,12 @@
     // ============================================================
     // Inicialización del SDK
     // ============================================================
-    const { AtlasCore } = AtlasCoreWebSDK;
+    const { AtlasCore } = window;
 
     AtlasCore.init({
       application: "atlascore-sdk-testpage",
-      environment: "development",
       endpoint: "http://localhost:4318",
-      debug: true,
-      serviceVersion: "0.1.0",
+      debug: true
     });
 
     // ============================================================

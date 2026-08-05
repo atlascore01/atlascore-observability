@@ -1,7 +1,10 @@
 (function(global2, factory) {
-  typeof exports === "object" && typeof module !== "undefined" ? factory(exports) : typeof define === "function" && define.amd ? define(["exports"], factory) : (global2 = typeof globalThis !== "undefined" ? globalThis : global2 || self, factory(global2.AtlasCoreWebSDK = {}));
+  typeof exports === "object" && typeof module !== "undefined" ? factory(exports) : typeof define === "function" && define.amd ? define(["exports"], factory) : (global2 = typeof globalThis !== "undefined" ? globalThis : global2 || self, factory(global2.AtlasCore = {}));
 })(this, function(exports2) {
-  "use strict";
+  "use strict";var __defProp = Object.defineProperty;
+var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
+
   const VERSION$4 = "1.9.1";
   const re = /^(\d+)\.(\d+)\.(\d+)(-(.+))?$/;
   function _makeCompatibilityCheck(ownVersion) {
@@ -994,19 +997,35 @@
     }
   }
   const trace = TraceAPI.getInstance();
+  function inferEnvironment() {
+    try {
+      const host = window.location.hostname;
+      if (host === "localhost" || host === "127.0.0.1" || host.startsWith("192.168.")) {
+        return "development";
+      }
+      if (host.includes("staging") || host.includes("dev.")) {
+        return "staging";
+      }
+      return "production";
+    } catch {
+      return "production";
+    }
+  }
   function resolveConfig(config) {
     return {
       application: config.application,
-      environment: config.environment,
-      serviceVersion: config.serviceVersion ?? "0.0.0",
       endpoint: config.endpoint,
+      environment: config.environment ?? inferEnvironment(),
+      preset: config.preset ?? "frontend-standard",
+      plugins: config.plugins ?? [],
+      serviceVersion: config.serviceVersion ?? "0.0.0",
       exportIntervalMs: config.exportIntervalMs ?? 5e3,
       sampleRate: config.sampleRate ?? 1,
-      debug: config.debug ?? false,
       trackPageViews: config.trackPageViews ?? true,
       trackFetch: config.trackFetch ?? true,
       trackXHR: config.trackXHR ?? true,
-      trackErrors: config.trackErrors ?? true
+      trackErrors: config.trackErrors ?? true,
+      debug: config.debug ?? false
     };
   }
   let debugEnabled = false;
@@ -2989,7 +3008,7 @@
         var _this = this;
         if (this._isExporting)
           return;
-        var flush = function() {
+        var flush2 = function() {
           _this._isExporting = true;
           _this._flushOneBatch().finally(function() {
             _this._isExporting = false;
@@ -3003,12 +3022,12 @@
           });
         };
         if (this._finishedSpans.length >= this._maxExportBatchSize) {
-          return flush();
+          return flush2();
         }
         if (this._timer !== void 0)
           return;
         this._timer = setTimeout(function() {
-          return flush();
+          return flush2();
         }, this._scheduledDelayMillis);
         unrefTimer(this._timer);
       };
@@ -5943,6 +5962,42 @@
       return DocumentLoadInstrumentation2;
     }(InstrumentationBase)
   );
+  class PageLoadPlugin {
+    constructor() {
+      __publicField(this, "name", "page-load");
+    }
+    setup(provider, config) {
+      if (!config.trackPageViews) {
+        return;
+      }
+      const unload = registerInstrumentations({
+        tracerProvider: provider,
+        instrumentations: [
+          new DocumentLoadInstrumentation({
+            applyCustomAttributesOnSpan: {
+              documentLoad: (span) => {
+                span.setAttribute("page.url", window.location.href);
+                span.setAttribute("page.path", window.location.pathname);
+                span.setAttribute("page.title", document.title);
+              },
+              documentFetch: () => {
+              },
+              resourceFetch: () => {
+              }
+            }
+          })
+        ]
+      });
+      logger$1.info("Plugin 'PageLoad' inicializado");
+      return () => {
+        unload();
+        logger$1.debug("[PageLoadPlugin] Cleaned up");
+      };
+    }
+  }
+  function PageLoad() {
+    return new PageLoadPlugin();
+  }
   var PerformanceTimingNames$1;
   (function(PerformanceTimingNames2) {
     PerformanceTimingNames2["CONNECT_END"] = "connectEnd";
@@ -6959,133 +7014,168 @@
       return XMLHttpRequestInstrumentation2;
     }(InstrumentationBase)
   );
-  function getIgnoredUrls(endpoint) {
-    return [endpoint, `${endpoint}/v1/traces`, `${endpoint}/v1/metrics`];
-  }
-  function registerAutoInstrumentations(provider, config) {
-    const instrumentations = [];
-    if (config.trackPageViews) {
-      instrumentations.push(
-        new DocumentLoadInstrumentation({
-          applyCustomAttributesOnSpan: {
-            documentLoad: (span) => {
-              span.setAttribute("page.url", window.location.href);
-              span.setAttribute("page.path", window.location.pathname);
-              span.setAttribute("page.title", document.title);
-            },
-            documentFetch: () => {
-            },
-            resourceFetch: () => {
+  class NetworkPlugin {
+    constructor() {
+      __publicField(this, "name", "network");
+    }
+    setup(provider, config) {
+      const instrumentations = [];
+      const ignoredUrls = [config.endpoint, `${config.endpoint}/v1/traces`];
+      if (config.trackFetch) {
+        instrumentations.push(
+          new FetchInstrumentation({
+            propagateTraceHeaderCorsUrls: [/.*/],
+            clearTimingResources: true,
+            ignoreUrls: ignoredUrls,
+            applyCustomAttributesOnSpan: (span, request, result) => {
+              if (result instanceof Response) {
+                const contentLength = parseInt(result.headers.get("content-length") ?? "0") || 0;
+                span.setAttribute("http.response_content_length", contentLength);
+              }
+              span.setAttribute("atlascore.instrumentation", "fetch");
             }
-          }
-        })
-      );
-      logger$1.debug("Instrumentación DocumentLoad registrada");
-    }
-    if (config.trackFetch) {
-      instrumentations.push(
-        new FetchInstrumentation({
-          propagateTraceHeaderCorsUrls: [/.*/],
-          clearTimingResources: true,
-          ignoreUrls: getIgnoredUrls(config.endpoint),
-          applyCustomAttributesOnSpan: (span, request, result) => {
-            if (result instanceof Response) {
-              span.setAttribute(
-                "http.response_content_length",
-                parseInt(result.headers.get("content-length") ?? "0") || 0
-              );
-            }
-            span.setAttribute("atlascore.instrumentation", "fetch");
-          }
-        })
-      );
-      logger$1.debug("Instrumentación Fetch registrada");
-    }
-    if (config.trackXHR) {
-      instrumentations.push(
-        new XMLHttpRequestInstrumentation({
-          propagateTraceHeaderCorsUrls: [/.*/],
-          ignoreUrls: getIgnoredUrls(config.endpoint)
-        })
-      );
-      logger$1.debug("Instrumentación XMLHttpRequest registrada");
-    }
-    registerInstrumentations({
-      instrumentations,
-      tracerProvider: provider
-    });
-    logger$1.info(
-      `${instrumentations.length} instrumentaciones automáticas activas`
-    );
-  }
-  const TRACER_NAME = "@atlascore/web-sdk";
-  function setupErrorTracking(config) {
-    if (!config.trackErrors) {
+          })
+        );
+      }
+      if (config.trackXHR) {
+        instrumentations.push(
+          new XMLHttpRequestInstrumentation({
+            propagateTraceHeaderCorsUrls: [/.*/],
+            ignoreUrls: ignoredUrls
+          })
+        );
+      }
+      if (instrumentations.length === 0) {
+        return;
+      }
+      const unload = registerInstrumentations({
+        tracerProvider: provider,
+        instrumentations
+      });
+      logger$1.info("Plugin 'Network' (Fetch & XHR) inicializado");
       return () => {
+        unload();
+        logger$1.debug("[NetworkPlugin] Cleaned up");
       };
     }
-    const tracer = trace.getTracer(TRACER_NAME);
-    const sessionAttrs = getSessionAttributes();
-    const errorHandler = (event) => {
-      const span = tracer.startSpan("browser.error");
-      span.setAttributes({
-        ...sessionAttrs,
-        "error.type": "javascript_error",
-        "error.message": event.message,
-        "error.filename": event.filename,
-        "error.lineno": event.lineno,
-        "error.colno": event.colno,
-        "page.url": window.location.href,
-        "page.path": window.location.pathname
-      });
-      if (event.error instanceof Error) {
-        span.setAttributes({
-          "error.stack": event.error.stack ?? "",
-          "error.name": event.error.name
-        });
+  }
+  function Network() {
+    return new NetworkPlugin();
+  }
+  const TRACER_NAME$1 = "@atlascore/web-sdk/errors";
+  class ErrorsPlugin {
+    constructor() {
+      __publicField(this, "name", "errors");
+    }
+    setup(_provider2, config) {
+      if (!config.trackErrors) {
+        return;
       }
-      span.setStatus({ code: SpanStatusCode.ERROR, message: event.message });
-      span.end();
-      logger$1.debug("Error capturado:", event.message);
-    };
-    const rejectionHandler = (event) => {
-      const span = tracer.startSpan("browser.unhandled_rejection");
-      const reason = event.reason;
-      const message = reason instanceof Error ? reason.message : String(reason);
-      span.setAttributes({
-        ...sessionAttrs,
-        "error.type": "unhandled_rejection",
-        "error.message": message,
-        "page.url": window.location.href,
-        "page.path": window.location.pathname
-      });
-      if (reason instanceof Error) {
+      const tracer = trace.getTracer(TRACER_NAME$1);
+      const errorHandler = (event) => {
+        const span = tracer.startSpan("browser.error");
+        const sessionAttrs = getSessionAttributes();
         span.setAttributes({
-          "error.stack": reason.stack ?? "",
-          "error.name": reason.name
+          ...sessionAttrs,
+          "error.type": "javascript_error",
+          "error.message": event.message,
+          "error.filename": event.filename,
+          "error.lineno": event.lineno,
+          "error.colno": event.colno,
+          "page.url": window.location.href,
+          "page.path": window.location.pathname
         });
-      }
-      span.setStatus({ code: SpanStatusCode.ERROR, message });
+        if (event.error instanceof Error) {
+          span.setAttributes({
+            "error.stack": event.error.stack ?? "",
+            "error.name": event.error.name
+          });
+        }
+        span.setStatus({ code: SpanStatusCode.ERROR, message: event.message });
+        span.end();
+        logger$1.debug("[ErrorsPlugin] Error capturado:", event.message);
+      };
+      const rejectionHandler = (event) => {
+        const span = tracer.startSpan("browser.unhandled_rejection");
+        const sessionAttrs = getSessionAttributes();
+        const reason = event.reason;
+        const message = reason instanceof Error ? reason.message : String(reason);
+        span.setAttributes({
+          ...sessionAttrs,
+          "error.type": "unhandled_rejection",
+          "error.message": message,
+          "page.url": window.location.href,
+          "page.path": window.location.pathname
+        });
+        if (reason instanceof Error) {
+          span.setAttributes({
+            "error.stack": reason.stack ?? "",
+            "error.name": reason.name
+          });
+        }
+        span.setStatus({ code: SpanStatusCode.ERROR, message });
+        span.end();
+        logger$1.debug("[ErrorsPlugin] Promise rejection capturada:", message);
+      };
+      window.addEventListener("error", errorHandler);
+      window.addEventListener("unhandledrejection", rejectionHandler);
+      logger$1.info("Plugin 'Errors' inicializado y escuchando");
+      return () => {
+        window.removeEventListener("error", errorHandler);
+        window.removeEventListener("unhandledrejection", rejectionHandler);
+        logger$1.debug("[ErrorsPlugin] Cleaned up");
+      };
+    }
+  }
+  function Errors() {
+    return new ErrorsPlugin();
+  }
+  const TRACER_NAME = "@atlascore/web-sdk/sessions";
+  class SessionsPlugin {
+    constructor() {
+      __publicField(this, "name", "sessions");
+    }
+    setup(_provider2, _config) {
+      const tracer = trace.getTracer(TRACER_NAME);
+      const sessionAttrs = getSessionAttributes();
+      const span = tracer.startSpan("session.start", {
+        attributes: {
+          ...sessionAttrs,
+          "page.url": window.location.href,
+          "page.path": window.location.pathname,
+          "browser.language": navigator.language
+        }
+      });
       span.end();
-      logger$1.debug("Promise rejection capturada:", message);
-    };
-    window.addEventListener("error", errorHandler);
-    window.addEventListener("unhandledrejection", rejectionHandler);
-    logger$1.info("Error tracking activo");
-    return () => {
-      window.removeEventListener("error", errorHandler);
-      window.removeEventListener("unhandledrejection", rejectionHandler);
-    };
+      logger$1.info(`Plugin 'Sessions' inicializado - Session ID: ${sessionAttrs["session.id"]}`);
+    }
+  }
+  function Sessions() {
+    return new SessionsPlugin();
+  }
+  function getPresetPlugins(name) {
+    switch (name) {
+      case "frontend-standard":
+        return [
+          PageLoad(),
+          Network(),
+          Errors(),
+          Sessions()
+        ];
+      case "none":
+      default:
+        return [];
+    }
   }
   let _initialized = false;
   let _provider = null;
-  let _cleanupErrors = null;
+  const _cleanups = [];
   const AtlasCore = {
     /**
-     * Inicializa el SDK con la configuración del usuario.
-     * Debe llamarse una sola vez, lo antes posible (idealmente en el <head>).
+     * Inicializa el SDK de forma modular.
+     * Carga los presets y plugins configurados.
      *
-     * @param config - Configuración del SDK
+     * @param config - Configuración de AtlasCore
      */
     init(config) {
       if (_initialized) {
@@ -7099,13 +7189,26 @@
       logger$1.info("Inicializando AtlasCore Web SDK...", {
         application: resolved.application,
         environment: resolved.environment,
-        endpoint: resolved.endpoint
+        endpoint: resolved.endpoint,
+        preset: resolved.preset
       });
+      const presetPlugins = getPresetPlugins(resolved.preset);
+      const allPlugins = [...presetPlugins, ...resolved.plugins];
+      logger$1.debug(`Combinando ${presetPlugins.length} plugins de preset con ${resolved.plugins.length} plugins custom`);
       const resource = buildResource(resolved);
       _provider = createTraceProvider(resolved, resource);
       _provider.register();
-      registerAutoInstrumentations(_provider, resolved);
-      _cleanupErrors = setupErrorTracking(resolved);
+      allPlugins.forEach((plugin) => {
+        try {
+          logger$1.debug(`Inicializando plugin: ${plugin.name}`);
+          const cleanup = plugin.setup(_provider, resolved);
+          if (typeof cleanup === "function") {
+            _cleanups.push(cleanup);
+          }
+        } catch (err) {
+          logger$1.error(`Error inicializando plugin '${plugin.name}':`, err);
+        }
+      });
       window.addEventListener("visibilitychange", () => {
         if (document.visibilityState === "hidden") {
           void _provider?.forceFlush?.();
@@ -7113,13 +7216,10 @@
         }
       });
       _initialized = true;
-      logger$1.info("✓ AtlasCore Web SDK listo");
+      logger$1.info(`✓ AtlasCore Web SDK inicializado con éxito. (${allPlugins.length} plugins activos)`);
     },
     /**
-     * Retorna el tracer de OTel para uso manual (spans custom).
-     * Solo disponible después de init().
-     *
-     * @param name - Nombre del tracer (ej: "mi-componente")
+     * Retorna el tracer de OTel para spans manuales de negocio.
      */
     getTracer(name = "@atlascore/web-sdk") {
       if (!_initialized) {
@@ -7135,7 +7235,6 @@
     },
     /**
      * Fuerza el envío de todos los spans pendientes.
-     * Útil antes de navegar fuera de la SPA o hacer logout.
      */
     async flush() {
       if (_provider) {
@@ -7144,14 +7243,18 @@
       }
     },
     /**
-     * Detiene el SDK y libera recursos.
-     * Normalmente no hace falta llamarlo; es útil para tests.
+     * Detiene el SDK y limpia todos los plugins.
      */
     async shutdown() {
-      if (_cleanupErrors) {
-        _cleanupErrors();
-        _cleanupErrors = null;
-      }
+      logger$1.debug(`Ejecutando ${_cleanups.length} cleanups de plugins...`);
+      _cleanups.forEach((cleanup) => {
+        try {
+          cleanup();
+        } catch (err) {
+          logger$1.error("Error ejecutando cleanup de plugin:", err);
+        }
+      });
+      _cleanups.length = 0;
       if (_provider) {
         await _provider.shutdown();
         _provider = null;
@@ -7160,7 +7263,19 @@
       logger$1.info("AtlasCore Web SDK detenido");
     }
   };
+  const init = AtlasCore.init.bind(AtlasCore);
+  const getTracer = AtlasCore.getTracer.bind(AtlasCore);
+  const flush = AtlasCore.flush.bind(AtlasCore);
+  const shutdown = AtlasCore.shutdown.bind(AtlasCore);
   exports2.AtlasCore = AtlasCore;
+  exports2.Errors = Errors;
+  exports2.Network = Network;
+  exports2.PageLoad = PageLoad;
+  exports2.Sessions = Sessions;
+  exports2.flush = flush;
+  exports2.getTracer = getTracer;
+  exports2.init = init;
+  exports2.shutdown = shutdown;
   Object.defineProperty(exports2, Symbol.toStringTag, { value: "Module" });
 });
 //# sourceMappingURL=atlascore-web-sdk.umd.js.map

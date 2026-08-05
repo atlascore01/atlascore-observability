@@ -1,28 +1,21 @@
 /**
- * Inicialización de AtlasCore Web SDK para la Landing/Docs de AtlasCore
+ * Inicialización simplificada de AtlasCore Web SDK para la Landing/Docs
  */
 (function () {
-  // Esperar a que el SDK esté disponible en el objeto global window
   function initSDK() {
-    if (window.AtlasCoreWebSDK) {
-      const { AtlasCore } = window.AtlasCoreWebSDK;
-      
-      // Inicializar el SDK
-      AtlasCore.init({
+    if (window.AtlasCore) {
+      // Inicializar el SDK de forma directa y simplificada (el entorno y preset se infieren automáticamente)
+      window.AtlasCore.init({
         application: "atlascore-landing",
-        environment: "development", // Cambiar a "production" al desplegar
         endpoint: "http://localhost:4318", // Endpoint de Grafana Alloy
-        debug: true,
-        serviceVersion: "0.1.0"
+        debug: true
       });
-      
-      console.log("[AtlasCore] SDK inicializado en la landing page.");
+      console.log("[AtlasCore] SDK inicializado directamente en la landing page.");
     } else {
-      console.error("[AtlasCore] Error: AtlasCoreWebSDK no está cargado globalmente.");
+      console.error("[AtlasCore] Error: window.AtlasCore no está definido.");
     }
   }
 
-  // Ejecutar cuando el DOM esté listo o inmediatamente si ya lo está
   if (document.readyState === "complete" || document.readyState === "interactive") {
     initSDK();
   } else {

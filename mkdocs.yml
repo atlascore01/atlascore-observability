@@ -41,6 +41,7 @@ nav:
 
   - SDK:
       - sdk/web-sdk.md
+      - sdk/deployment-methods.md
 
   - RFC:
       - RFC-0001: rfc/RFC-0001.md

@@ -12,7 +12,7 @@ export default defineConfig({
   build: {
     lib: {
       entry: resolve(__dirname, "src/index.ts"),
-      name: "AtlasCoreWebSDK",
+      name: "AtlasCore",
       formats: ["es", "umd"],
       fileName: (format) => `atlascore-web-sdk.${format}.js`,
     },
