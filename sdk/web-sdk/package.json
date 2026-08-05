@@ -1,0 +1,43 @@
+{
+  "name": "@atlascore/web-sdk",
+  "version": "0.1.0",
+  "description": "AtlasCore Web SDK - Frontend Observability Capability",
+  "main": "dist/atlascore-web-sdk.umd.js",
+  "module": "dist/atlascore-web-sdk.es.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "dev": "vite build --watch",
+    "build": "tsc && vite build",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src --ext .ts"
+  },
+  "dependencies": {
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/sdk-trace-web": "^1.26.0",
+    "@opentelemetry/sdk-metrics": "^1.26.0",
+    "@opentelemetry/resources": "^1.26.0",
+    "@opentelemetry/semantic-conventions": "^1.27.0",
+    "@opentelemetry/instrumentation": "^0.53.0",
+    "@opentelemetry/instrumentation-document-load": "^0.40.0",
+    "@opentelemetry/instrumentation-fetch": "^0.53.0",
+    "@opentelemetry/instrumentation-xml-http-request": "^0.53.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.53.0",
+    "web-vitals": "^4.2.3"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.3",
+    "vite": "^5.3.4",
+    "vite-plugin-dts": "^4.0.0"
+  },
+  "keywords": [
+    "observability",
+    "opentelemetry",
+    "otel",
+    "frontend",
+    "monitoring",
+    "atlascore"
+  ],
+  "author": "AtlasCore",
+  "license": "Apache-2.0"
+}

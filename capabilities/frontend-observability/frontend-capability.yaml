@@ -1,0 +1,43 @@
+id: AC-CAP-001
+
+name: Frontend Observability
+
+version: 0.1
+
+status: Draft
+
+owner: AtlasCore
+
+category: Frontend
+
+supported_languages:
+  - React
+  - Vue
+  - Angular
+  - NextJS
+
+telemetry:
+
+  metrics: true
+
+  traces: true
+
+  logs: true
+
+  profiling: false
+
+dependencies:
+
+  alloy
+
+  mimir
+
+  loki
+
+  tempo
+
+dashboards: 4
+
+alerts: 12
+
+runbooks: 3

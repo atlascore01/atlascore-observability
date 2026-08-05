@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AtlasCore SDK - Test Page</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #58a6ff, #bc8cff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      color: #8b949e;
+      margin-bottom: 40px;
+      font-size: 0.9rem;
+    }
+
+    .card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 24px;
+      width: 100%;
+      max-width: 640px;
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      font-size: 1rem;
+      color: #58a6ff;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #21262d;
+      font-size: 0.85rem;
+    }
+
+    .status-row:last-child { border-bottom: none; }
+
+    .label { color: #8b949e; }
+
+    .value {
+      font-family: monospace;
+      font-size: 0.8rem;
+      color: #e6edf3;
+      max-width: 320px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .badge {
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .badge-ok { background: #1f4a1f; color: #56d364; }
+    .badge-pending { background: #2d2500; color: #e3b341; }
+    .badge-error { background: #4a1f1f; color: #f85149; }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    button {
+      padding: 10px 16px;
+      border-radius: 8px;
+      border: 1px solid #30363d;
+      background: #21262d;
+      color: #e6edf3;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.15s;
+      text-align: left;
+    }
+
+    button:hover {
+      background: #30363d;
+      border-color: #58a6ff;
+    }
+
+    button .btn-label { display: block; font-weight: 600; }
+    button .btn-desc { display: block; color: #8b949e; font-size: 0.75rem; margin-top: 2px; }
+
+    #log {
+      font-family: monospace;
+      font-size: 0.78rem;
+      max-height: 300px;
+      overflow-y: auto;
+      background: #0d1117;
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .log-entry {
+      padding: 4px 0;
+      border-bottom: 1px solid #21262d;
+      line-height: 1.5;
+    }
+
+    .log-entry:last-child { border-bottom: none; }
+    .log-time { color: #58a6ff; }
+    .log-ok { color: #56d364; }
+    .log-warn { color: #e3b341; }
+    .log-error { color: #f85149; }
+    .log-info { color: #8b949e; }
+  </style>
+</head>
+<body>
+
+  <h1>⚡ AtlasCore Web SDK</h1>
+  <p class="subtitle">Sprint 1 — Página de validación local</p>
+
+  <!-- Estado del SDK -->
+  <div class="card">
+    <h2>🔍 Estado del SDK</h2>
+    <div class="status-row">
+      <span class="label">SDK Inicializado</span>
+      <span id="sdk-status" class="badge badge-pending">Cargando...</span>
+    </div>
+    <div class="status-row">
+      <span class="label">Session ID</span>
+      <span id="session-id" class="value">—</span>
+    </div>
+    <div class="status-row">
+      <span class="label">Anonymous User ID</span>
+      <span id="user-id" class="value">—</span>
+    </div>
+    <div class="status-row">
+      <span class="label">Endpoint OTLP</span>
+      <span id="endpoint" class="value">—</span>
+    </div>
+    <div class="status-row">
+      <span class="label">Page URL</span>
+      <span id="page-url" class="value">—</span>
+    </div>
+    <div class="status-row">
+      <span class="label">User Agent</span>
+      <span id="user-agent" class="value">—</span>
+    </div>
+  </div>
+
+  <!-- Acciones de prueba -->
+  <div class="card">
+    <h2>🧪 Acciones de Prueba</h2>
+    <div class="actions">
+      <button onclick="testFetch()">
+        <span class="btn-label">📡 Fetch Request</span>
+        <span class="btn-desc">Genera span de red</span>
+      </button>
+      <button onclick="testError()">
+        <span class="btn-label">💥 Simular Error JS</span>
+        <span class="btn-desc">Genera span de error</span>
+      </button>
+      <button onclick="testRejection()">
+        <span class="btn-label">🔴 Promise Rejection</span>
+        <span class="btn-desc">Error async sin catch</span>
+      </button>
+      <button onclick="testCustomSpan()">
+        <span class="btn-label">✏️ Span Custom</span>
+        <span class="btn-desc">Span manual de negocio</span>
+      </button>
+      <button onclick="testFlush()">
+        <span class="btn-label">📤 Flush Manual</span>
+        <span class="btn-desc">Fuerza envío a OTLP</span>
+      </button>
+      <button onclick="clearLog()">
+        <span class="btn-label">🗑️ Limpiar Log</span>
+        <span class="btn-desc">Limpia el panel</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Log de eventos -->
+  <div class="card">
+    <h2>📋 Log de Eventos</h2>
+    <div id="log"></div>
+  </div>
+
+  <!-- Cargar el SDK compilado -->
+  <script src="./web-sdk/dist/atlascore-web-sdk.umd.js"></script>
+
+  <script>
+    // ============================================================
+    // Inicialización del SDK
+    // ============================================================
+    const { AtlasCore } = AtlasCoreWebSDK;
+
+    AtlasCore.init({
+      application: "atlascore-sdk-testpage",
+      environment: "development",
+      endpoint: "http://localhost:4318",
+      debug: true,
+      serviceVersion: "0.1.0",
+    });
+
+    // ============================================================
+    // Helpers UI
+    // ============================================================
+    function log(msg, type = "info") {
+      const logEl = document.getElementById("log");
+      const time = new Date().toLocaleTimeString("es-AR");
+      const div = document.createElement("div");
+      div.className = "log-entry";
+      div.innerHTML = `<span class="log-time">${time}</span> <span class="log-${type}">${msg}</span>`;
+      logEl.prepend(div);
+    }
+
+    function clearLog() {
+      document.getElementById("log").innerHTML = "";
+    }
+
+    // ============================================================
+    // Actualizar UI con estado del SDK
+    // ============================================================
+    function updateStatus() {
+      document.getElementById("sdk-status").textContent = "✓ Activo";
+      document.getElementById("sdk-status").className = "badge badge-ok";
+      document.getElementById("session-id").textContent =
+        sessionStorage.getItem("atlascore.session_id") || "—";
+      document.getElementById("user-id").textContent =
+        localStorage.getItem("atlascore.user_id") || "—";
+      document.getElementById("endpoint").textContent = "http://localhost:4318";
+      document.getElementById("page-url").textContent = window.location.href;
+      document.getElementById("user-agent").textContent = navigator.userAgent;
+    }
+
+    // ============================================================
+    // Acciones de prueba
+    // ============================================================
+    async function testFetch() {
+      log("Realizando fetch a https://httpbin.org/get...", "info");
+      try {
+        const res = await fetch("https://httpbin.org/get");
+        const data = await res.json();
+        log(`✓ Fetch completado → status: ${res.status}`, "ok");
+        log(`  → Span generado y enviado a OTLP`, "ok");
+      } catch (e) {
+        log(`✗ Fetch falló: ${e.message}`, "error");
+      }
+    }
+
+    function testError() {
+      log("Lanzando error JavaScript...", "warn");
+      setTimeout(() => {
+        // setTimeout para que el error se capture como global
+        throw new Error("AtlasCore Test Error — error intencional de prueba");
+      }, 0);
+    }
+
+    function testRejection() {
+      log("Creando Promise rejection sin catch...", "warn");
+      Promise.reject(new Error("AtlasCore Test Rejection — unhandled promise rejection"));
+    }
+
+    function testCustomSpan() {
+      const tracer = AtlasCore.getTracer("test-page");
+      const span = tracer.startSpan("test.custom_action");
+      span.setAttribute("test.action", "button_click");
+      span.setAttribute("test.page", "sdk-testpage");
+      span.setAttribute("test.timestamp", Date.now());
+
+      // Simular trabajo de 50ms
+      setTimeout(() => {
+        span.end();
+        log("✓ Span custom 'test.custom_action' enviado", "ok");
+      }, 50);
+
+      log("Creando span custom 'test.custom_action'...", "info");
+    }
+
+    async function testFlush() {
+      log("Forzando flush de spans pendientes...", "info");
+      await AtlasCore.flush();
+      log("✓ Flush completado", "ok");
+    }
+
+    // ============================================================
+    // Capturar logs de consola para mostrarlos en pantalla
+    // ============================================================
+    const originalConsoleDebug = console.debug.bind(console);
+    const originalConsoleInfo = console.info.bind(console);
+    const originalConsoleWarn = console.warn.bind(console);
+    const originalConsoleError = console.error.bind(console);
+
+    console.debug = (...args) => {
+      originalConsoleDebug(...args);
+      if (args[0] === "[AtlasCore]") log(args.slice(1).join(" "), "info");
+    };
+    console.info = (...args) => {
+      originalConsoleInfo(...args);
+      if (args[0] === "[AtlasCore]") log(args.slice(1).join(" "), "ok");
+    };
+    console.warn = (...args) => {
+      originalConsoleWarn(...args);
+      if (args[0] === "[AtlasCore]") log(args.slice(1).join(" "), "warn");
+    };
+
+    // ============================================================
+    // Init
+    // ============================================================
+    updateStatus();
+    log("SDK cargado. Abrí Grafana/Tempo para ver las trazas →  http://localhost:3000", "ok");
+    log("DocumentLoad span generado automáticamente al cargar esta página.", "info");
+  </script>
+
+</body>
+</html>

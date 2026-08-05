@@ -1,6 +1,45 @@
-site_name: Atlascore Observability
+site_name: AtlasCore Observability
+
+site_description: Modular observability platform based on OpenTelemetry
+
+repo_name: AtlasCore Observability
+repo_url: https://github.com/
 
 theme:
-    name: material
+  name: material
+  language: es
 
-    
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.highlight
+    - content.code.copy
+
+nav:
+
+  - Inicio:
+      - index.md
+
+  - Visión:
+      - vision/vision.md
+      - vision/principles.md
+
+  - Arquitectura:
+      - architecture/overview.md
+      - architecture/telemetry-pipeline.md
+
+  - Módulos:
+      - modules/frontend.md
+      - modules/infrastructure.md
+      - modules/backend.md
+
+  - SDK:
+      - sdk/web-sdk.md
+
+  - RFC:
+      - RFC-0001: rfc/RFC-0001.md
+
+  - Investigación:
+      - research/index.md

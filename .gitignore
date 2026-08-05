@@ -1,0 +1,94 @@
+# ============================================================
+# AtlasCore Observability — .gitignore
+# ============================================================
+
+# ─── Node.js / NPM ──────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+.npm/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# ─── Build outputs ──────────────────────────────────────────
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# ─── TypeScript ─────────────────────────────────────────────
+*.js.map
+*.d.ts.map
+
+# ─── Python / MkDocs (docs) ─────────────────────────────────
+env/
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+site/                 # MkDocs build output
+.mkdocs-cache/
+
+# ─── Datos de telemetría / Logs ─────────────────────────────
+otel-logs/
+*.json.log
+otel-*.json
+
+# ─── Variables de entorno / Secretos ────────────────────────
+.env
+.env.*
+!.env.example
+*.secret
+secrets/
+
+# ─── Docker volumes / runtime data ──────────────────────────
+# No commitear datos de runtime de Tempo/Loki/Mimir
+tempo-data/
+loki-data/
+mimir-data/
+grafana-data/
+data/
+
+# ─── IDEs y editores ────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── OS ─────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# ─── Tests / Coverage ───────────────────────────────────────
+coverage/
+.nyc_output/
+*.lcov
+test-results/
+
+# ─── Temporales ─────────────────────────────────────────────
+*.tmp
+*.temp
+.cache/
+.parcel-cache/
+.turbo/
+
+# ─── Certificados locales ───────────────────────────────────
+*.pem
+*.key
+*.crt
+*.p12
